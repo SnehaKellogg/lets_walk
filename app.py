@@ -10,6 +10,7 @@ from sqlalchemy import func
 
 from flask import Flask, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
+import refreshdb
 
 app = Flask(__name__)
 
@@ -60,8 +61,8 @@ def RestaurantList():
     # "State","Zip","Date","Inspection","Success","Description","Lat","Lng"]
     results = db.session.query(Restaurants.Name, Restaurants.DBA, Restaurants.Type, Restaurants.Street, Restaurants.City, \
         Restaurants.State, Restaurants.Date, Restaurants.Inspection, Restaurants.Success, Restaurants.Description, \
-            Restaurants.Lat, Restaurants.Lng).limit(3000) #change this to  ".all()" to retrive all the data
-            #Note-- the year function returns Null when adding strftime. Need to FIX: func.strftime("%YYYY", Restaurants.Date)
+            Restaurants.Lat, Restaurants.Lng, Restaurants.Year).limit(3000) #change this to  ".all()" to retrive all the data
+            #Note-- the year function returns Null when adding strftime. Need to FIX: func.strftime("%Y", Restaurants.Date)
         
     list = []
     for result in results:
@@ -72,7 +73,8 @@ def RestaurantList():
             "Lng":result[10],
             "Inspection":result[7],
             "success":result[8],
-            "Year": result[6]
+            "Date": result[6],
+            "Year":result[12]
            
         })
     return jsonify(list)
@@ -82,22 +84,34 @@ def RestaurantList():
 
 ####NOTE: NEED TO FIC THIS TO TAKE IN A DATE VARIABLE
 
-@app.route("/InspectionDate")
-def inspectiondate():
+@app.route("/InspectionDate/<year>")
+def inspectiondate(year):
 
     #available columns:  ["id","Name","DBA","identifier","Type","Risk","Street","City",\
     # "State","Zip","Date","Inspection","Success","Description","Lat","Lng"]
     years = db.session.query(Restaurants.Name, Restaurants.DBA, Restaurants.Type, Restaurants.Street, Restaurants.City, \
         Restaurants.State, Restaurants.Date, Restaurants.Inspection, Restaurants.Success, Restaurants.Description, \
-            Restaurants.Lat, Restaurants.Lng).filter_by(Date="06/06/2019").all()
+            Restaurants.Lat, Restaurants.Lng, Restaurants.Year).filter(Restaurants.Year==year).all()
     list = []
     for result in years:
         list.append({
-            "Name": result[0]
+            "Name": result[0],
+            "DBA": result[1],
+            "Type":result[2],
+            "street": result[3],
+            "success":result[9],
+            "Lat": result[11],
+            "Lng":result[10],
+            "Year":result[12]
+
+
         })
     return jsonify(list)
 
-
+@app.route("/refreshdb")
+def getnewdata():
+    refreshdb.refresh()
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run()
